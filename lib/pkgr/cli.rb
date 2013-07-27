@@ -140,7 +140,7 @@ module Pkgr
       Pkgr.setup(dir)
 
       gemfile = File.read("Gemfile")
-      unless gemfile =~ /^[ ]*gem[ ]*'pkgr'/
+      unless gemfile =~ /^[ ]*gem[ ]*'pkgr'.*/
         File.open("Gemfile", "a") do |f|
           f.puts
           f.puts "gem 'pkgr'"
