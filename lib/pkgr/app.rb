@@ -23,7 +23,7 @@ module Pkgr
       raise ArgumentError, "The given configuration file at '#{path}' is not a well-formed YAML file. Please fix it or remove it and run 'rake pkgr:setup'" unless @config.kind_of?(Hash)
       @config['_path'] = path
     end
-    
+
     def write_config
       File.open(@config['_path'] || raise("Don't know where to save myself!"), "w+") {|f|
         YAML.dump(@config.reject{|k,v| k == '_path'}, f)
@@ -101,11 +101,11 @@ module Pkgr
     def version
       @config['version']
     end
-    
+
     def user
       @config.fetch('user') { name }
     end
-    
+
     def group
       @config.fetch('group') { name }
     end
@@ -208,15 +208,15 @@ module Pkgr
         archive = "#{name}-#{version}"
         sh "scp #{File.expand_path("../data/config/pre_boot.rb", __FILE__)} #{host}:/tmp/"
         cmd = %Q{
-          git archive #{git_ref} --prefix=#{archive}/ | ssh #{host} 'cat - > /tmp/#{archive}.tar &&
+          git archive #{git_ref} --prefix=#{archive}/ | cat - > /tmp/#{archive}.tar &&
             set -x && rm -rf /tmp/#{archive} &&
             cd /tmp && tar xf #{archive}.tar && cd #{archive} &&
-            cat config/boot.rb >> /tmp/pre_boot.rb && cp -f /tmp/pre_boot.rb config/boot.rb &&
-            #{debian_steps.join(" &&\n")}'
+            cat config/boot.rb >> /tmp/pre_boot.rb && cp -f /tmp/pre_boot.rb config/boot.rb
         }
         sh cmd
-        # Fetch all package files, and put it in the `pkg` directory
-        sh "scp #{host}:/tmp/#{name}_#{version}* pkg/"
+        sh "cd /tmp/#{archive} && #{debian_steps.join(" &&\n")}"
+        # Fetch the .deb, and put it in the `pkg` directory
+        sh "scp #{host}:/tmp/#{name}_#{version}*.deb pkg/"
       end
     end
 
@@ -232,7 +232,7 @@ module Pkgr
         "dpkg-buildpackage -us -uc -d"
       ]
     end
-    
+
     def release_debian_package(host, apt_directory = nil)
       apt_directory ||= "/var/www/#{name}"
       latest = Dir[File.join(root, "pkg", "*.deb")].find{|file| file =~ /#{version}/}
